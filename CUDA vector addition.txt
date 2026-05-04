@@ -1,0 +1,69 @@
+// (A) VECTOR ADDITION USING CUDA
+
+#include <iostream>
+#include <cuda_runtime.h>
+#include <cstdlib>
+using namespace std;
+
+// Kernel function
+__global__ void addVectors(int *A, int *B, int *C, int n) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i < n) {
+        C[i] = A[i] + B[i];
+    }
+}
+
+int main() {
+    int n;
+    cout << "Enter size of vectors: ";
+    cin >> n;
+
+    int size = n * sizeof(int);
+
+    int *A, *B, *C;
+
+    A = (int*)malloc(size);
+    B = (int*)malloc(size);
+    C = (int*)malloc(size);
+
+    cout << "Enter elements of vector A:\n";
+    for (int i = 0; i < n; i++)
+        cin >> A[i];
+
+    cout << "Enter elements of vector B:\n";
+    for (int i = 0; i < n; i++)
+        cin >> B[i];
+
+    int *d_A, *d_B, *d_C;
+
+    cudaMalloc((void**)&d_A, size);
+    cudaMalloc((void**)&d_B, size);
+    cudaMalloc((void**)&d_C, size);
+
+    cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
+
+    int blockSize = 256;
+    int gridSize = (n + blockSize - 1) / blockSize;
+
+    addVectors<<<gridSize, blockSize>>>(d_A, d_B, d_C, n);
+
+    cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
+
+    cout << "\nResult Vector:\n";
+    for (int i = 0; i < n; i++)
+        cout << C[i] << " ";
+
+    cout << endl;
+
+    cudaFree(d_A);
+    cudaFree(d_B);
+    cudaFree(d_C);
+
+    free(A);
+    free(B);
+    free(C);
+
+    return 0;
+}
